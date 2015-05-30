@@ -1,0 +1,92 @@
+#/bin/bash
+
+SERVERDIR="/home/sb/server/linux32"
+BACKUPDIR="/home/sb/worldbackups"
+WORLDDIR="/home/sb/server/giraffe_storage/universe"
+STEAMUSER=""
+
+CMD=$1
+
+getpid() {
+	ps -ef | grep .*starbound_server.* | grep -v grep | awk '{ print $2 }' | xargs
+}
+
+status() {
+	PID=`getpid`
+	if [ -z $PID ]
+	then
+		echo "Starbound Server is not running"
+	else
+		echo "Starbound Server is running with PID: $PID"
+	fi	
+}
+
+start() {
+	echo "Starting Starbound Server"
+	cd $SERVERDIR
+	./starbound_server &
+	cd -
+}
+
+ask-start() {
+	echo "Would you like to start Starbound now? (Y/n)"
+	read YESNO
+	case $YESNO in
+		n|N)
+		;;
+		*)
+			start
+		;;
+	esac
+}
+
+stop() {
+	PID=`getpid`
+        if [ -z $PID ]
+        then
+                echo "Starbound Server is not running"
+        else
+		echo "Stopping Starbound Server"
+                echo "PID: $PID"
+		kill $PID
+        fi
+}
+
+backup() {
+	BACKUPNAME="$BACKUPDIR/sbserver-"`date +%s`".gz"
+        echo "Backing up $WORLDDIR to $BACKUPNAME"
+        tar -czf $BACKUPNAME $WORLDDIR
+}
+
+update() {
+	steamcmd +login $STEAMUSER +force_install_dir /home/sb/server +app_update 211820 +exit
+}
+
+case $CMD in
+	status)
+		status
+	;;
+	start)
+		start
+	;;
+	stop)
+		stop
+	;;
+	restart)
+		stop
+		start
+	;;
+	backup)
+                stop
+                backup
+                start
+        ;;
+	update)
+		stop
+		update
+		ask-start
+	;;
+	*)
+		echo "Usage: status|start|stop|restart|backup|update"
+	;;
+esac
