@@ -1,0 +1,2 @@
+# sbserver
+Starbound Server Script
